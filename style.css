@@ -1,0 +1,48 @@
+* {
+    all: unset;
+    font-family: "JetBrainsMono Nerd Font", "FiraCode Nerd Font", "Noto Sans", "Roboto", sans-serif;
+}
+
+window#dock-window {
+    background-color: transparent;
+    background: transparent;
+}
+
+.dock-capsule {
+    background-color: rgba(18, 20, 29, 0.60);
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    border-radius: 20px;
+    padding: 8px 20px;
+    min-height: 28px;
+}
+
+.dock-clock {
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 2px;
+}
+
+.dock-dnd-btn {
+    font-size: 15px;
+    margin-left: 10px;
+    padding: 2px 4px;
+    border-radius: 8px;
+    transition: all 150ms ease;
+}
+
+.dock-dnd-btn:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.dnd-on {
+    color: #f87171; /* Campana silenciada / No molestar activo */
+}
+
+.dnd-off {
+    color: rgba(255, 255, 255, 0.35); /* Campana normal tenue */
+}
+
+.dnd-off:hover {
+    color: #ffffff;
+}
