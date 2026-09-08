@@ -1,6 +1,30 @@
-# 🕒 Minimal Clock Dock (con Campana / DND)
+# 🕒 Minimal Clock Dock + Keybindings (Hyprland / Wayland)
 
-Dock minimalista, moderno y flotante con reloj 24h, botón sutil interactivo de **No Molestar (DND)** / Modo Normal, fondo oscuro translúcido con blur acrílico, persistencia sobre pantalla completa y **detección automática de pantalla principal por defecto**.
+Dock minimalista, moderno y flotante con reloj 24h, botón sutil interactivo de **No Molestar (DND)**, fondo oscuro translúcido con blur acrílico, persistencia sobre pantalla completa, **detección de pantalla principal** y la **configuración completa de atajos de teclado**.
+
+---
+
+## ⌨️ Atajos de Teclado Principales (`SUPER` = Tecla Windows)
+
+| Atajo | Acción |
+| :--- | :--- |
+| <kbd>SUPER</kbd> + <kbd>D</kbd> | **Lanzador de aplicaciones (Rofi)** |
+| <kbd>SUPER</kbd> + <kbd>Enter</kbd> | **Abrir Terminal (Kitty)** |
+| <kbd>SUPER</kbd> + <kbd>B</kbd> | **Abrir Navegador Web** |
+| <kbd>SUPER</kbd> + <kbd>E</kbd> | **Abrir Gestor de Archivos (Nautilus)** |
+| <kbd>SUPER</kbd> + <kbd>A</kbd> | **Vista general / Overview** |
+| <kbd>SUPER</kbd> + <kbd>ALT</kbd> + <kbd>V</kbd> | **Historial del Portapapeles (Cliphist)** |
+| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>S</kbd> | **Captura de pantalla por área** |
+| <kbd>SUPER</kbd> + <kbd>Q</kbd> | **Cerrar ventana activa** |
+| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>F</kbd> | **Pantalla Completa (Fullscreen)** |
+| <kbd>SUPER</kbd> + <kbd>Space</kbd> | **Alternar ventana flotante (Floating)** |
+| <kbd>SUPER</kbd> + <kbd>1</kbd> .. <kbd>0</kbd> | **Cambiar de espacio de trabajo (Workspaces)** |
+| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>1</kbd> .. <kbd>0</kbd> | **Mover ventana a espacio de trabajo** |
+| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>N</kbd> | **Panel de notificaciones (SwayNC)** |
+| <kbd>SUPER</kbd> + <kbd>L</kbd> | **Bloquear pantalla (Lock screen)** |
+| <kbd>SUPER</kbd> + <kbd>CTRL</kbd> + <kbd>R</kbd> | **Recargar configuración de Hyprland** |
+
+*(Los archivos completos de atajos están disponibles en [`keybindings.conf`](keybindings.conf) y [`keybindings.lua`](keybindings.lua)).*
 
 ---
 
@@ -9,14 +33,14 @@ Dock minimalista, moderno y flotante con reloj 24h, botón sutil interactivo de 
 En Arch Linux / EndeavourOS:
 
 ```bash
-sudo pacman -S python python-gobject gtk3 gtk-layer-shell swaync
+sudo pacman -S python python-gobject gtk3 gtk-layer-shell swaync rofi
 ```
 
 ---
 
-## ⚙️ 2. Archivos de Configuración
+## ⚙️ 2. Archivos de Configuración del Dock
 
-Crea la carpeta de configuración:
+Crea la carpeta de configuración si aún no existe:
 ```bash
 mkdir -p ~/.config/minimal-dock
 ```
@@ -150,11 +174,9 @@ def get_primary_monitor():
     display = Gdk.Display.get_default()
     if not display:
         return None
-    # Intenta obtener el monitor marcado como principal
     primary = display.get_primary_monitor()
     if primary:
         return primary
-    # Si no, selecciona automáticamente el de mayor resolución (pantalla principal)
     n = display.get_n_monitors()
     if n == 0:
         return None
