@@ -1,6 +1,6 @@
 # 🕒 Minimal Clock Dock (con Campana / DND)
 
-Guía completa para replicar el dock minimalista flotante con reloj 24h, botón sutil de **Campana (No Molestar / DND)**, fondo oscuro translúcido, efecto blur acrílico y persistencia sobre ventanas a pantalla completa.
+Dock minimalista, moderno y flotante con reloj 24h, botón sutil interactivo de **No Molestar (DND)** / Modo Normal, fondo oscuro translúcido con blur acrílico, persistencia sobre pantalla completa y **detección automática de pantalla principal por defecto**.
 
 ---
 
@@ -37,7 +37,7 @@ gi.require_version('GtkLayerShell', '0.1')
 from gi.repository import Gtk, Gdk, GLib, GtkLayerShell
 
 class MinimalClockDock(Gtk.Window):
-    def __init__(self):
+    def __init__(self, monitor=None):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.set_name("dock-window")
         
@@ -46,6 +46,10 @@ class MinimalClockDock(Gtk.Window):
         GtkLayerShell.set_namespace(self, "minimal-dock")
         # OVERLAY garantiza que quede visible incluso en pantalla completa (fullscreen)
         GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
+        
+        # Asignar a la pantalla principal
+        if monitor:
+            GtkLayerShell.set_monitor(self, monitor)
         
         # Anclar abajo al centro
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.BOTTOM, True)
@@ -98,7 +102,7 @@ class MinimalClockDock(Gtk.Window):
         self.clock_label.get_style_context().add_class("dock-clock")
         box.pack_start(self.clock_label, True, True, 0)
         
-        # Botón Campana (No Molestar)
+        # Botón Campana (No Molestar / DND)
         self.dnd_btn = Gtk.Button()
         self.dnd_btn.get_style_context().add_class("dock-dnd-btn")
         self.dnd_label = Gtk.Label()
@@ -142,8 +146,32 @@ class MinimalClockDock(Gtk.Window):
         except Exception as e:
             print(f"Error cambiando DND: {e}")
 
+def get_primary_monitor():
+    display = Gdk.Display.get_default()
+    if not display:
+        return None
+    # Intenta obtener el monitor marcado como principal
+    primary = display.get_primary_monitor()
+    if primary:
+        return primary
+    # Si no, selecciona automáticamente el de mayor resolución (pantalla principal)
+    n = display.get_n_monitors()
+    if n == 0:
+        return None
+    best_monitor = display.get_monitor(0)
+    max_pixels = 0
+    for i in range(n):
+        mon = display.get_monitor(i)
+        geom = mon.get_geometry()
+        pixels = geom.width * geom.height
+        if pixels > max_pixels:
+            max_pixels = pixels
+            best_monitor = mon
+    return best_monitor
+
 if __name__ == "__main__":
-    win = MinimalClockDock()
+    primary_mon = get_primary_monitor()
+    win = MinimalClockDock(monitor=primary_mon)
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
     Gtk.main()

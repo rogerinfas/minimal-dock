@@ -13,12 +13,13 @@ class MinimalClockDock(Gtk.Window):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.set_name("dock-window")
         
-        # Integración con LayerShell
+        # Integración con LayerShell (Hyprland / Wayland)
         GtkLayerShell.init_for_window(self)
         GtkLayerShell.set_namespace(self, "minimal-dock")
+        # OVERLAY garantiza que quede visible incluso en pantalla completa
         GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
         
-        # Fijar monitor principal (HDMI-A-1 / índice 0)
+        # Asignar al monitor principal si se especifica
         if monitor:
             GtkLayerShell.set_monitor(self, monitor)
         
@@ -28,9 +29,10 @@ class MinimalClockDock(Gtk.Window):
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.RIGHT, False)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.TOP, False)
         
+        # Margen inferior
         GtkLayerShell.set_margin(self, GtkLayerShell.Edge.BOTTOM, 14)
         
-        # Transparencia
+        # Canal alfa / transparencia
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
         if visual and screen.is_composited():
@@ -44,7 +46,7 @@ class MinimalClockDock(Gtk.Window):
         # Estructura UI
         self.setup_ui()
         
-        # Timers
+        # Actualizaciones periódicas
         GLib.timeout_add_seconds(1, self.update_clock)
         GLib.timeout_add_seconds(2, self.update_dnd_status)
         self.update_clock()
@@ -72,7 +74,7 @@ class MinimalClockDock(Gtk.Window):
         self.clock_label.get_style_context().add_class("dock-clock")
         box.pack_start(self.clock_label, True, True, 0)
         
-        # Botón Campana (DND)
+        # Botón Campana (No Molestar / DND)
         self.dnd_btn = Gtk.Button()
         self.dnd_btn.get_style_context().add_class("dock-dnd-btn")
         self.dnd_label = Gtk.Label()
@@ -98,12 +100,12 @@ class MinimalClockDock(Gtk.Window):
         is_dnd = self.get_dnd_state()
         ctx = self.dnd_btn.get_style_context()
         if is_dnd:
-            self.dnd_label.set_text("󰂛")
+            self.dnd_label.set_text("󰂛") # Campana tachada (DND activo)
             self.dnd_btn.set_tooltip_text("No Molestar: Activo (Clic para desactivar)")
             ctx.remove_class("dnd-off")
             ctx.add_class("dnd-on")
         else:
-            self.dnd_label.set_text("󰂚")
+            self.dnd_label.set_text("󰂚") # Campana normal
             self.dnd_btn.set_tooltip_text("No Molestar: Desactivado (Clic para activar)")
             ctx.remove_class("dnd-on")
             ctx.add_class("dnd-off")
@@ -116,12 +118,32 @@ class MinimalClockDock(Gtk.Window):
         except Exception as e:
             print(f"Error cambiando DND: {e}")
 
-if __name__ == "__main__":
+def get_primary_monitor():
     display = Gdk.Display.get_default()
-    # Selecciona el monitor principal (primer monitor o resolución mayor)
-    primary_monitor = display.get_monitor(0)
-    
-    win = MinimalClockDock(monitor=primary_monitor)
+    if not display:
+        return None
+    # Intenta obtener el monitor principal
+    primary = display.get_primary_monitor()
+    if primary:
+        return primary
+    # Si no hay uno marcado como primary, selecciona el de mayor resolución o el índice 0
+    n = display.get_n_monitors()
+    if n == 0:
+        return None
+    best_monitor = display.get_monitor(0)
+    max_pixels = 0
+    for i in range(n):
+        mon = display.get_monitor(i)
+        geom = mon.get_geometry()
+        pixels = geom.width * geom.height
+        if pixels > max_pixels:
+            max_pixels = pixels
+            best_monitor = mon
+    return best_monitor
+
+if __name__ == "__main__":
+    primary_mon = get_primary_monitor()
+    win = MinimalClockDock(monitor=primary_mon)
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
     Gtk.main()
