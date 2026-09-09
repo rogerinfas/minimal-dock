@@ -13,25 +13,20 @@ class MinimalClockDock(Gtk.Window):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.set_name("dock-window")
         
-        # Integración con LayerShell (Hyprland / Wayland)
         GtkLayerShell.init_for_window(self)
         GtkLayerShell.set_namespace(self, "minimal-dock")
         GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
         
-        # Asignar a la pantalla principal
         if monitor:
             GtkLayerShell.set_monitor(self, monitor)
         
-        # Anclar abajo al centro
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.BOTTOM, True)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.LEFT, False)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.RIGHT, False)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.TOP, False)
         
-        # Margen inferior
         GtkLayerShell.set_margin(self, GtkLayerShell.Edge.BOTTOM, 14)
         
-        # Canal alfa / transparencia
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
         if visual and screen.is_composited():
@@ -39,13 +34,9 @@ class MinimalClockDock(Gtk.Window):
             
         self.set_app_paintable(True)
         
-        # Cargar estilos CSS
         self.load_css()
-        
-        # Estructura UI
         self.setup_ui()
         
-        # Actualizaciones periódicas
         GLib.timeout_add_seconds(1, self.update_clock)
         GLib.timeout_add_seconds(2, self.update_dnd_status)
         GLib.timeout_add_seconds(2, self.update_volume_status)
@@ -75,26 +66,19 @@ class MinimalClockDock(Gtk.Window):
         self.clock_label.get_style_context().add_class("dock-clock")
         box.pack_start(self.clock_label, True, True, 0)
         
-        # Separador vertical
-        separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        separator.get_style_context().add_class("dock-separator")
-        box.pack_start(separator, False, False, 0)
-        
-        # Botón Campana (No Molestar / DND)
+        # Botón Campana (DND)
         self.dnd_btn = Gtk.Button()
-        self.dnd_btn.get_style_context().add_class("dock-icon-btn")
+        self.dnd_btn.get_style_context().add_class("dock-dnd-btn")
         self.dnd_label = Gtk.Label()
         self.dnd_btn.add(self.dnd_label)
         self.dnd_btn.connect("clicked", self.toggle_dnd)
         box.pack_start(self.dnd_btn, False, False, 0)
         
-        # Botón de Volumen interactivo
+        # Botón Volumen (sin separador, estilo unificado)
         self.vol_btn = Gtk.Button()
-        self.vol_btn.get_style_context().add_class("dock-icon-btn")
+        self.vol_btn.get_style_context().add_class("dock-vol-btn")
         self.vol_label = Gtk.Label()
         self.vol_btn.add(self.vol_label)
-        
-        # Habilitar eventos de scroll de ratón para subir/bajar volumen
         self.vol_btn.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
         self.vol_btn.connect("button-press-event", self.on_vol_click)
         self.vol_btn.connect("scroll-event", self.on_vol_scroll)
@@ -118,12 +102,12 @@ class MinimalClockDock(Gtk.Window):
         is_dnd = self.get_dnd_state()
         ctx = self.dnd_btn.get_style_context()
         if is_dnd:
-            self.dnd_label.set_text("󰂛") # Campana tachada (DND activo)
+            self.dnd_label.set_text("󰂛")
             self.dnd_btn.set_tooltip_text("No Molestar: Activo (Clic para desactivar)")
             ctx.remove_class("dnd-off")
             ctx.add_class("dnd-on")
         else:
-            self.dnd_label.set_text("󰂚") # Campana normal
+            self.dnd_label.set_text("󰂚")
             self.dnd_btn.set_tooltip_text("No Molestar: Desactivado (Clic para activar)")
             ctx.remove_class("dnd-on")
             ctx.add_class("dnd-off")
@@ -139,7 +123,6 @@ class MinimalClockDock(Gtk.Window):
     def get_volume_info(self):
         try:
             out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"], text=True, timeout=1).strip()
-            # Formato: "Volume: 0.40" o "Volume: 0.40 [MUTED]"
             is_muted = "[MUTED]" in out
             vol_str = out.replace("Volume:", "").replace("[MUTED]", "").strip()
             vol = int(float(vol_str) * 100)
@@ -152,13 +135,13 @@ class MinimalClockDock(Gtk.Window):
         ctx = self.vol_btn.get_style_context()
         
         if is_muted or vol == 0:
-            self.vol_label.set_text("󰝟") # Mute
-            ctx.remove_class("vol-icon")
+            self.vol_label.set_text("󰝟")
+            ctx.remove_class("vol-on")
             ctx.add_class("vol-muted")
-            self.vol_btn.set_tooltip_text(f"Volumen: Silenciado (Clic izq: Desmutear | Clic der: Mezclador)")
+            self.vol_btn.set_tooltip_text("Volumen: Silenciado")
         else:
             ctx.remove_class("vol-muted")
-            ctx.add_class("vol-icon")
+            ctx.add_class("vol-on")
             if vol < 30:
                 icon = "󰕿"
             elif vol < 70:
@@ -166,15 +149,15 @@ class MinimalClockDock(Gtk.Window):
             else:
                 icon = "󰕾"
             self.vol_label.set_text(icon)
-            self.vol_btn.set_tooltip_text(f"Volumen: {vol}% (Rueda: Ajustar | Clic izq: Silenciar | Clic der: Mezclador)")
+            self.vol_btn.set_tooltip_text(f"Volumen: {vol}%")
         return True
 
     def on_vol_click(self, widget, event):
-        if event.button == 1: # Clic izquierdo: Mute / Unmute
+        if event.button == 1:
             subprocess.run(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"], check=False)
             self.update_volume_status()
             return True
-        elif event.button == 3: # Clic derecho: Abrir pavucontrol (mezclador de audio)
+        elif event.button == 3:
             try:
                 subprocess.Popen(["pavucontrol"])
             except Exception:

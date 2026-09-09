@@ -23,40 +23,47 @@ window#dock-window {
     letter-spacing: 2px;
 }
 
-.dock-separator {
-    background-color: rgba(255, 255, 255, 0.18);
-    width: 1px;
-    margin: 3px 10px;
-}
-
-.dock-icon-btn {
+.dock-dnd-btn {
     font-size: 15px;
-    padding: 2px 5px;
+    margin-left: 10px;
+    padding: 2px 4px;
     border-radius: 8px;
     transition: all 150ms ease;
 }
 
-.dock-icon-btn:hover {
+.dock-dnd-btn:hover {
     background-color: rgba(255, 255, 255, 0.12);
 }
 
 .dnd-on {
-    color: #f87171; /* Rojo suave cuando está en No Molestar */
+    color: #f87171; /* Campana silenciada (DND activo) */
 }
 
 .dnd-off {
-    color: rgba(255, 255, 255, 0.35); /* Campana normal */
+    color: rgba(255, 255, 255, 0.35); /* Campana normal tenue */
 }
 
 .dnd-off:hover {
     color: #ffffff;
 }
 
-.vol-icon {
-    color: rgba(255, 255, 255, 0.65);
+.dock-vol-btn {
+    font-size: 15px;
+    margin-left: 6px;
+    padding: 2px 4px;
+    border-radius: 8px;
+    transition: all 150ms ease;
 }
 
-.vol-icon:hover {
+.dock-vol-btn:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.vol-on {
+    color: rgba(255, 255, 255, 0.50);
+}
+
+.vol-on:hover {
     color: #ffffff;
 }
 
