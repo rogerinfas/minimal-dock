@@ -23,50 +23,46 @@ window#dock-window {
     letter-spacing: 2px;
 }
 
-.dock-dnd-btn {
+.dock-dnd-btn, .dock-vol-btn {
     font-size: 15px;
-    margin-left: 10px;
     padding: 2px 4px;
     border-radius: 8px;
     transition: all 150ms ease;
+    color: #ffffff;
 }
 
-.dock-dnd-btn:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-}
-
-.dnd-on {
-    color: #f87171; /* Notificaciones Silenciadas (DND) */
-}
-
-.dnd-off {
-    color: #ffffff; /* Notificaciones Normales: Blanco claro */
-}
-
-.dnd-off:hover {
-    color: #38bdf8;
+.dock-dnd-btn {
+    margin-left: 10px;
 }
 
 .dock-vol-btn {
-    font-size: 15px;
     margin-left: 8px;
-    padding: 2px 4px;
-    border-radius: 8px;
-    transition: all 150ms ease;
 }
 
-.dock-vol-btn:hover {
+.dock-dnd-btn label, .dock-vol-btn label {
+    color: #ffffff;
+}
+
+.dock-dnd-btn.dnd-on, .dock-dnd-btn.dnd-on label {
+    color: #f87171 !important;
+}
+
+.dock-dnd-btn.dnd-off, .dock-dnd-btn.dnd-off label {
+    color: #ffffff !important;
+}
+
+.dock-vol-btn.vol-muted, .dock-vol-btn.vol-muted label {
+    color: #f87171 !important;
+}
+
+.dock-vol-btn.vol-on, .dock-vol-btn.vol-on label {
+    color: #ffffff !important;
+}
+
+.dock-dnd-btn:hover, .dock-vol-btn:hover {
     background-color: rgba(255, 255, 255, 0.12);
 }
 
-.vol-on {
-    color: #ffffff; /* Audio Normal: Blanco claro */
-}
-
-.vol-on:hover {
-    color: #38bdf8;
-}
-
-.vol-muted {
-    color: #f87171; /* Audio Silenciado: Rojo */
+.dock-dnd-btn:hover label, .dock-vol-btn:hover label {
+    color: #38bdf8 !important;
 }

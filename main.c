@@ -40,17 +40,22 @@ static gboolean get_dnd_state() {
 
 static gboolean update_dnd_status(gpointer user_data) {
     gboolean is_dnd = get_dnd_state();
-    GtkStyleContext *ctx = gtk_widget_get_style_context(dnd_btn);
+    GtkStyleContext *btn_ctx = gtk_widget_get_style_context(dnd_btn);
+    GtkStyleContext *lbl_ctx = gtk_widget_get_style_context(dnd_label);
     if (is_dnd) {
         gtk_label_set_text(GTK_LABEL(dnd_label), "󰂛");
         gtk_widget_set_tooltip_text(dnd_btn, "No Molestar: Activo (Clic para desactivar)");
-        gtk_style_context_remove_class(ctx, "dnd-off");
-        gtk_style_context_add_class(ctx, "dnd-on");
+        gtk_style_context_remove_class(btn_ctx, "dnd-off");
+        gtk_style_context_add_class(btn_ctx, "dnd-on");
+        gtk_style_context_remove_class(lbl_ctx, "dnd-off");
+        gtk_style_context_add_class(lbl_ctx, "dnd-on");
     } else {
         gtk_label_set_text(GTK_LABEL(dnd_label), "󰂚");
         gtk_widget_set_tooltip_text(dnd_btn, "No Molestar: Desactivado (Clic para activar)");
-        gtk_style_context_remove_class(ctx, "dnd-on");
-        gtk_style_context_add_class(ctx, "dnd-off");
+        gtk_style_context_remove_class(btn_ctx, "dnd-on");
+        gtk_style_context_add_class(btn_ctx, "dnd-off");
+        gtk_style_context_remove_class(lbl_ctx, "dnd-on");
+        gtk_style_context_add_class(lbl_ctx, "dnd-off");
     }
     return TRUE;
 }
@@ -67,7 +72,6 @@ static void get_volume_info(int *volume, gboolean *is_muted) {
     if (!fp) return;
     char buffer[128];
     if (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        // Formatos posibles: "Volume: 0.38" o "Volume: 0.38 [MUTED]"
         if (strstr(buffer, "[MUTED]") != NULL || strstr(buffer, "MUTED") != NULL) {
             *is_muted = TRUE;
         }
@@ -86,16 +90,21 @@ static gboolean update_volume_status(gpointer user_data) {
     int vol = 0;
     gboolean is_muted = FALSE;
     get_volume_info(&vol, &is_muted);
-    GtkStyleContext *ctx = gtk_widget_get_style_context(vol_btn);
+    GtkStyleContext *btn_ctx = gtk_widget_get_style_context(vol_btn);
+    GtkStyleContext *lbl_ctx = gtk_widget_get_style_context(vol_label);
 
     if (is_muted || vol == 0) {
         gtk_label_set_text(GTK_LABEL(vol_label), "󰝟");
-        gtk_style_context_remove_class(ctx, "vol-on");
-        gtk_style_context_add_class(ctx, "vol-muted");
+        gtk_style_context_remove_class(btn_ctx, "vol-on");
+        gtk_style_context_add_class(btn_ctx, "vol-muted");
+        gtk_style_context_remove_class(lbl_ctx, "vol-on");
+        gtk_style_context_add_class(lbl_ctx, "vol-muted");
         gtk_widget_set_tooltip_text(vol_btn, "Volumen: Silenciado (Clic para desmutear)");
     } else {
-        gtk_style_context_remove_class(ctx, "vol-muted");
-        gtk_style_context_add_class(ctx, "vol-on");
+        gtk_style_context_remove_class(btn_ctx, "vol-muted");
+        gtk_style_context_add_class(btn_ctx, "vol-on");
+        gtk_style_context_remove_class(lbl_ctx, "vol-muted");
+        gtk_style_context_add_class(lbl_ctx, "vol-on");
         if (vol < 30) {
             gtk_label_set_text(GTK_LABEL(vol_label), "󰕿");
         } else if (vol < 70) {
@@ -112,13 +121,12 @@ static gboolean update_volume_status(gpointer user_data) {
 
 static gboolean delayed_update_volume(gpointer user_data) {
     update_volume_status(NULL);
-    return FALSE; // Solo ejecutar una vez
+    return FALSE;
 }
 
 static gboolean on_vol_click(GtkWidget *widget, GdkEventButton *event, gpointer user_data) {
     if (event->button == 1) {
         system("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle >/dev/null 2>&1");
-        // Pequeño retardo para que WirePlumber registre el cambio en PipeWire
         g_timeout_add(80, delayed_update_volume, NULL);
         return TRUE;
     } else if (event->button == 3) {
@@ -212,6 +220,7 @@ int main(int argc, char *argv[]) {
     dnd_btn = gtk_button_new();
     gtk_style_context_add_class(gtk_widget_get_style_context(dnd_btn), "dock-dnd-btn");
     dnd_label = gtk_label_new("󰂚");
+    gtk_style_context_add_class(gtk_widget_get_style_context(dnd_label), "dnd-off");
     gtk_container_add(GTK_CONTAINER(dnd_btn), dnd_label);
     g_signal_connect(dnd_btn, "clicked", G_CALLBACK(toggle_dnd), NULL);
     gtk_box_pack_start(GTK_BOX(box), dnd_btn, FALSE, FALSE, 0);
@@ -219,6 +228,7 @@ int main(int argc, char *argv[]) {
     vol_btn = gtk_button_new();
     gtk_style_context_add_class(gtk_widget_get_style_context(vol_btn), "dock-vol-btn");
     vol_label = gtk_label_new("󰕾");
+    gtk_style_context_add_class(gtk_widget_get_style_context(vol_label), "vol-on");
     gtk_container_add(GTK_CONTAINER(vol_btn), vol_label);
     gtk_widget_add_events(vol_btn, GDK_SCROLL_MASK | GDK_BUTTON_PRESS_MASK);
     g_signal_connect(vol_btn, "button-press-event", G_CALLBACK(on_vol_click), NULL);
