@@ -13,20 +13,26 @@ class MinimalClockDock(Gtk.Window):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.set_name("dock-window")
         
+        # Integración con LayerShell (Hyprland / Wayland)
         GtkLayerShell.init_for_window(self)
         GtkLayerShell.set_namespace(self, "minimal-dock")
+        # OVERLAY garantiza que quede visible incluso en pantalla completa
         GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
         
+        # Asignar al monitor principal si se especifica
         if monitor:
             GtkLayerShell.set_monitor(self, monitor)
         
+        # Anclar abajo al centro
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.BOTTOM, True)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.LEFT, False)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.RIGHT, False)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.TOP, False)
         
+        # Margen inferior
         GtkLayerShell.set_margin(self, GtkLayerShell.Edge.BOTTOM, 14)
         
+        # Canal alfa / transparencia
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
         if visual and screen.is_composited():
@@ -34,15 +40,17 @@ class MinimalClockDock(Gtk.Window):
             
         self.set_app_paintable(True)
         
+        # Cargar estilos CSS
         self.load_css()
+        
+        # Estructura UI
         self.setup_ui()
         
+        # Actualizaciones periódicas
         GLib.timeout_add_seconds(1, self.update_clock)
         GLib.timeout_add_seconds(2, self.update_dnd_status)
-        GLib.timeout_add_seconds(2, self.update_volume_status)
         self.update_clock()
         self.update_dnd_status()
-        self.update_volume_status()
 
     def load_css(self):
         provider = Gtk.CssProvider()
@@ -66,23 +74,13 @@ class MinimalClockDock(Gtk.Window):
         self.clock_label.get_style_context().add_class("dock-clock")
         box.pack_start(self.clock_label, True, True, 0)
         
-        # Botón Campana (DND)
+        # Botón Campana (No Molestar / DND)
         self.dnd_btn = Gtk.Button()
         self.dnd_btn.get_style_context().add_class("dock-dnd-btn")
         self.dnd_label = Gtk.Label()
         self.dnd_btn.add(self.dnd_label)
         self.dnd_btn.connect("clicked", self.toggle_dnd)
         box.pack_start(self.dnd_btn, False, False, 0)
-        
-        # Botón Volumen (sin separador, estilo unificado)
-        self.vol_btn = Gtk.Button()
-        self.vol_btn.get_style_context().add_class("dock-vol-btn")
-        self.vol_label = Gtk.Label()
-        self.vol_btn.add(self.vol_label)
-        self.vol_btn.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
-        self.vol_btn.connect("button-press-event", self.on_vol_click)
-        self.vol_btn.connect("scroll-event", self.on_vol_scroll)
-        box.pack_start(self.vol_btn, False, False, 0)
         
         self.add(box)
 
@@ -102,12 +100,12 @@ class MinimalClockDock(Gtk.Window):
         is_dnd = self.get_dnd_state()
         ctx = self.dnd_btn.get_style_context()
         if is_dnd:
-            self.dnd_label.set_text("󰂛")
+            self.dnd_label.set_text("󰂛") # Campana tachada (DND activo)
             self.dnd_btn.set_tooltip_text("No Molestar: Activo (Clic para desactivar)")
             ctx.remove_class("dnd-off")
             ctx.add_class("dnd-on")
         else:
-            self.dnd_label.set_text("󰂚")
+            self.dnd_label.set_text("󰂚") # Campana normal
             self.dnd_btn.set_tooltip_text("No Molestar: Desactivado (Clic para activar)")
             ctx.remove_class("dnd-on")
             ctx.add_class("dnd-off")
@@ -120,69 +118,15 @@ class MinimalClockDock(Gtk.Window):
         except Exception as e:
             print(f"Error cambiando DND: {e}")
 
-    def get_volume_info(self):
-        try:
-            out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"], text=True, timeout=1).strip()
-            is_muted = "[MUTED]" in out
-            vol_str = out.replace("Volume:", "").replace("[MUTED]", "").strip()
-            vol = int(float(vol_str) * 100)
-            return vol, is_muted
-        except Exception:
-            return 50, False
-
-    def update_volume_status(self):
-        vol, is_muted = self.get_volume_info()
-        ctx = self.vol_btn.get_style_context()
-        
-        if is_muted or vol == 0:
-            self.vol_label.set_text("󰝟")
-            ctx.remove_class("vol-on")
-            ctx.add_class("vol-muted")
-            self.vol_btn.set_tooltip_text("Volumen: Silenciado")
-        else:
-            ctx.remove_class("vol-muted")
-            ctx.add_class("vol-on")
-            if vol < 30:
-                icon = "󰕿"
-            elif vol < 70:
-                icon = "󰖀"
-            else:
-                icon = "󰕾"
-            self.vol_label.set_text(icon)
-            self.vol_btn.set_tooltip_text(f"Volumen: {vol}%")
-        return True
-
-    def on_vol_click(self, widget, event):
-        if event.button == 1:
-            subprocess.run(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"], check=False)
-            self.update_volume_status()
-            return True
-        elif event.button == 3:
-            try:
-                subprocess.Popen(["pavucontrol"])
-            except Exception:
-                pass
-            return True
-        return False
-
-    def on_vol_scroll(self, widget, event):
-        if event.direction == Gdk.ScrollDirection.UP:
-            subprocess.run(["wpctl", "set-volume", "-l", "1.0", "@DEFAULT_AUDIO_SINK@", "5%+"], check=False)
-            self.update_volume_status()
-            return True
-        elif event.direction == Gdk.ScrollDirection.DOWN:
-            subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"], check=False)
-            self.update_volume_status()
-            return True
-        return False
-
 def get_primary_monitor():
     display = Gdk.Display.get_default()
     if not display:
         return None
+    # Intenta obtener el monitor principal
     primary = display.get_primary_monitor()
     if primary:
         return primary
+    # Si no hay uno marcado como primary, selecciona el de mayor resolución o el índice 0
     n = display.get_n_monitors()
     if n == 0:
         return None

@@ -36,11 +36,11 @@ window#dock-window {
 }
 
 .dnd-on {
-    color: #cbd5e1; /* Luna brillante si está activo */
+    color: #f87171; /* Campana silenciada / No molestar activo */
 }
 
 .dnd-off {
-    color: rgba(255, 255, 255, 0.35); /* Luna tenue si está apagado */
+    color: rgba(255, 255, 255, 0.35); /* Campana normal tenue */
 }
 
 .dnd-off:hover {
