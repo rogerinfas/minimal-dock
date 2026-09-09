@@ -8,8 +8,6 @@
 static GtkWidget *clock_label;
 static GtkWidget *dnd_label;
 static GtkWidget *dnd_btn;
-static GtkWidget *vol_label;
-static GtkWidget *vol_btn;
 
 static gboolean update_clock(gpointer user_data) {
     time_t rawtime;
@@ -43,7 +41,6 @@ static gboolean update_dnd_status(gpointer user_data) {
     GtkStyleContext *btn_ctx = gtk_widget_get_style_context(dnd_btn);
     GtkStyleContext *lbl_ctx = gtk_widget_get_style_context(dnd_label);
     if (is_dnd) {
-        // Icono Campana Silenciada
         gtk_label_set_text(GTK_LABEL(dnd_label), "\U0000F00B"); // 󰂛
         gtk_widget_set_tooltip_text(dnd_btn, "No Molestar: Activo (Clic para desactivar)");
         gtk_style_context_remove_class(btn_ctx, "dnd-off");
@@ -51,7 +48,6 @@ static gboolean update_dnd_status(gpointer user_data) {
         gtk_style_context_remove_class(lbl_ctx, "dnd-off");
         gtk_style_context_add_class(lbl_ctx, "dnd-on");
     } else {
-        // Icono Campana Normal
         gtk_label_set_text(GTK_LABEL(dnd_label), "\U0000F00A"); // 󰂚
         gtk_widget_set_tooltip_text(dnd_btn, "No Molestar: Desactivado (Clic para activar)");
         gtk_style_context_remove_class(btn_ctx, "dnd-on");
@@ -65,111 +61,6 @@ static gboolean update_dnd_status(gpointer user_data) {
 static void toggle_dnd(GtkWidget *widget, gpointer data) {
     system("swaync-client -d >/dev/null 2>&1");
     update_dnd_status(NULL);
-}
-
-static void get_volume_info(int *volume, gboolean *is_muted) {
-    *volume = 50;
-    *is_muted = FALSE;
-
-    // 1. Obtener estado MUTE usando pactl
-    FILE *fp_mute = popen("pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null", "r");
-    if (fp_mute) {
-        char buf[64];
-        if (fgets(buf, sizeof(buf), fp_mute) != NULL) {
-            if (strstr(buf, "yes") != NULL || strstr(buf, "sí") != NULL || strstr(buf, "1") != NULL) {
-                *is_muted = TRUE;
-            } else if (strstr(buf, "no") != NULL || strstr(buf, "0") != NULL) {
-                *is_muted = FALSE;
-            }
-        }
-        pclose(fp_mute);
-    }
-
-    // 2. Obtener porcentaje de volumen usando pactl
-    FILE *fp_vol = popen("pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null", "r");
-    if (fp_vol) {
-        char buf[256];
-        if (fgets(buf, sizeof(buf), fp_vol) != NULL) {
-            char *pct = strchr(buf, '%');
-            if (pct) {
-                char *start = pct - 1;
-                while (start > buf && *(start - 1) >= '0' && *(start - 1) <= '9') {
-                    start--;
-                }
-                int v = 0;
-                if (sscanf(start, "%d%%", &v) == 1) {
-                    *volume = v;
-                }
-            }
-        }
-        pclose(fp_vol);
-    }
-}
-
-static gboolean update_volume_status(gpointer user_data) {
-    int vol = 0;
-    gboolean is_muted = FALSE;
-    get_volume_info(&vol, &is_muted);
-
-    GtkStyleContext *btn_ctx = gtk_widget_get_style_context(vol_btn);
-    GtkStyleContext *lbl_ctx = gtk_widget_get_style_context(vol_label);
-
-    if (is_muted || vol == 0) {
-        // Icono Mute
-        gtk_label_set_text(GTK_LABEL(vol_label), "\U0000F075F"); // 󰝟
-        gtk_style_context_remove_class(btn_ctx, "vol-on");
-        gtk_style_context_add_class(btn_ctx, "vol-muted");
-        gtk_style_context_remove_class(lbl_ctx, "vol-on");
-        gtk_style_context_add_class(lbl_ctx, "vol-muted");
-        gtk_widget_set_tooltip_text(vol_btn, "Volumen: Silenciado (Clic para desmutear)");
-    } else {
-        gtk_style_context_remove_class(btn_ctx, "vol-muted");
-        gtk_style_context_add_class(btn_ctx, "vol-on");
-        gtk_style_context_remove_class(lbl_ctx, "vol-muted");
-        gtk_style_context_add_class(lbl_ctx, "vol-on");
-        
-        if (vol < 30) {
-            gtk_label_set_text(GTK_LABEL(vol_label), "\U0000F057F"); // 󰕿 Bajo
-        } else if (vol < 70) {
-            gtk_label_set_text(GTK_LABEL(vol_label), "\U0000F0580"); // 󰖀 Medio
-        } else {
-            gtk_label_set_text(GTK_LABEL(vol_label), "\U0000F057E"); // 󰕾 Alto
-        }
-        char tip[64];
-        snprintf(tip, sizeof(tip), "Volumen: %d%%", vol);
-        gtk_widget_set_tooltip_text(vol_btn, tip);
-    }
-    return TRUE;
-}
-
-static gboolean delayed_update_volume(gpointer user_data) {
-    update_volume_status(NULL);
-    return FALSE;
-}
-
-static gboolean on_vol_click(GtkWidget *widget, GdkEventButton *event, gpointer user_data) {
-    if (event->button == 1) { // Clic izquierdo: Mute / Unmute
-        system("pactl set-sink-mute @DEFAULT_SINK@ toggle >/dev/null 2>&1");
-        g_timeout_add(50, delayed_update_volume, NULL);
-        return TRUE;
-    } else if (event->button == 3) { // Clic derecho: Mezclador
-        system("pavucontrol >/dev/null 2>&1 &");
-        return TRUE;
-    }
-    return FALSE;
-}
-
-static gboolean on_vol_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer user_data) {
-    if (event->direction == GDK_SCROLL_UP) {
-        system("pactl set-sink-volume @DEFAULT_SINK@ +5% >/dev/null 2>&1");
-        g_timeout_add(30, delayed_update_volume, NULL);
-        return TRUE;
-    } else if (event->direction == GDK_SCROLL_DOWN) {
-        system("pactl set-sink-volume @DEFAULT_SINK@ -5% >/dev/null 2>&1");
-        g_timeout_add(30, delayed_update_volume, NULL);
-        return TRUE;
-    }
-    return FALSE;
 }
 
 static GdkMonitor* get_primary_monitor(void) {
@@ -248,25 +139,13 @@ int main(int argc, char *argv[]) {
     g_signal_connect(dnd_btn, "clicked", G_CALLBACK(toggle_dnd), NULL);
     gtk_box_pack_start(GTK_BOX(box), dnd_btn, FALSE, FALSE, 0);
 
-    vol_btn = gtk_button_new();
-    gtk_style_context_add_class(gtk_widget_get_style_context(vol_btn), "dock-vol-btn");
-    vol_label = gtk_label_new("\U0000F057E");
-    gtk_style_context_add_class(gtk_widget_get_style_context(vol_label), "vol-on");
-    gtk_container_add(GTK_CONTAINER(vol_btn), vol_label);
-    gtk_widget_add_events(vol_btn, GDK_SCROLL_MASK | GDK_BUTTON_PRESS_MASK);
-    g_signal_connect(vol_btn, "button-press-event", G_CALLBACK(on_vol_click), NULL);
-    g_signal_connect(vol_btn, "scroll-event", G_CALLBACK(on_vol_scroll), NULL);
-    gtk_box_pack_start(GTK_BOX(box), vol_btn, FALSE, FALSE, 0);
-
     gtk_container_add(GTK_CONTAINER(win), box);
 
     update_clock(NULL);
     update_dnd_status(NULL);
-    update_volume_status(NULL);
 
     g_timeout_add_seconds(1, update_clock, NULL);
     g_timeout_add_seconds(1, update_dnd_status, NULL);
-    g_timeout_add_seconds(1, update_volume_status, NULL);
 
     g_signal_connect(win, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_widget_show_all(win);

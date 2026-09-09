@@ -23,37 +23,26 @@ window#dock-window {
     letter-spacing: 2px;
 }
 
-.dock-dnd-btn, .dock-vol-btn {
+.dock-dnd-btn {
     font-size: 15px;
+    margin-left: 10px;
     padding: 2px 4px;
     border-radius: 8px;
     transition: all 150ms ease;
 }
 
-.dock-dnd-btn {
-    margin-left: 10px;
-}
-
-.dock-vol-btn {
-    margin-left: 8px;
+.dock-dnd-btn:hover {
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 .dnd-on {
-    color: #f87171;
+    color: #f87171; /* Campana silenciada (DND) */
 }
 
 .dnd-off {
-    color: #ffffff;
+    color: #ffffff; /* Campana normal */
 }
 
-.vol-muted {
-    color: #f87171;
-}
-
-.vol-on {
-    color: #ffffff;
-}
-
-.dock-dnd-btn:hover, .dock-vol-btn:hover {
-    background-color: rgba(255, 255, 255, 0.12);
+.dnd-off:hover {
+    color: #38bdf8;
 }
