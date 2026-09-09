@@ -28,7 +28,6 @@ window#dock-window {
     padding: 2px 4px;
     border-radius: 8px;
     transition: all 150ms ease;
-    color: #ffffff;
 }
 
 .dock-dnd-btn {
@@ -39,30 +38,22 @@ window#dock-window {
     margin-left: 8px;
 }
 
-.dock-dnd-btn label, .dock-vol-btn label {
+.dnd-on {
+    color: #f87171;
+}
+
+.dnd-off {
     color: #ffffff;
 }
 
-.dock-dnd-btn.dnd-on, .dock-dnd-btn.dnd-on label {
-    color: #f87171 !important;
+.vol-muted {
+    color: #f87171;
 }
 
-.dock-dnd-btn.dnd-off, .dock-dnd-btn.dnd-off label {
-    color: #ffffff !important;
-}
-
-.dock-vol-btn.vol-muted, .dock-vol-btn.vol-muted label {
-    color: #f87171 !important;
-}
-
-.dock-vol-btn.vol-on, .dock-vol-btn.vol-on label {
-    color: #ffffff !important;
+.vol-on {
+    color: #ffffff;
 }
 
 .dock-dnd-btn:hover, .dock-vol-btn:hover {
     background-color: rgba(255, 255, 255, 0.12);
-}
-
-.dock-dnd-btn:hover label, .dock-vol-btn:hover label {
-    color: #38bdf8 !important;
 }
