@@ -1,46 +1,3 @@
-# 🕒 Minimal Dock (Binario Nativo C + GTK3 + LayerShell)
-
-Dock minimalista, ultra rápido y **compilado nativamente en C** (sin interprete de Python en ejecución):
-- ⚡ **Binario nativo compilado**: Cero consumo de Python, rendimiento instantáneo y ligero en memoria.
-- 🕒 **Reloj en formato 24 horas** (`HH:MM`).
-- 🔕 **Modo No Molestar (DND)** interactivo con `swaync` (󰂚 Normal / 󰂛 DND en rojo).
-- 🔊 **Control de Volumen General**:
-  - Rueda del ratón: Subir / Bajar volumen (+5% / -5%).
-  - Clic izquierdo: Silenciar / Reactivar (Mute toggle 󰝟).
-  - Clic derecho: Abrir mezclador de audio (`pavucontrol`).
-- 🪟 **Fondo oscuro translúcido con blur acrílico** en cápsula unificada.
-- 📌 **Persistencia sobre pantalla completa (Fullscreen / Layer OVERLAY)** y **fijado al monitor principal**.
-
----
-
-## 📦 1. Dependencias Requeridas
-
-En **Arch Linux / EndeavourOS**:
-```bash
-sudo pacman -S gcc make pkgconf gtk3 gtk-layer-shell swaync wireplumber pavucontrol
-```
-
----
-
-## 🛠️ 2. Compilar e Instalar
-
-Clona o descarga el código en `~/.config/minimal-dock`:
-
-```bash
-cd ~/.config/minimal-dock
-make
-make install
-```
-
-Esto compilará e instalará el binario ejecutable directamente en `~/.local/bin/minimal-dock`.
-
----
-
-## 📄 3. Código Fuente
-
-### A. `~/.config/minimal-dock/main.c`
-
-```c
 #include <gtk/gtk.h>
 #include <gtk-layer-shell.h>
 #include <time.h>
@@ -229,12 +186,14 @@ int main(int argc, char *argv[]) {
     }
     gtk_widget_set_app_paintable(win, TRUE);
 
+    // Cargar CSS
     GtkCssProvider *provider = gtk_css_provider_new();
     char css_path[512];
     snprintf(css_path, sizeof(css_path), "%s/.config/minimal-dock/style.css", getenv("HOME"));
     gtk_css_provider_load_from_path(provider, css_path, NULL);
     gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
+    // UI Box
     GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     GtkStyleContext *box_ctx = gtk_widget_get_style_context(box);
     gtk_style_context_add_class(box_ctx, "dock-capsule");
@@ -275,95 +234,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-```
-
-### B. `~/.config/minimal-dock/style.css`
-
-```css
-* {
-    all: unset;
-    font-family: "JetBrainsMono Nerd Font", "FiraCode Nerd Font", "Noto Sans", "Roboto", sans-serif;
-}
-
-window#dock-window {
-    background-color: transparent;
-    background: transparent;
-}
-
-.dock-capsule {
-    background-color: rgba(18, 20, 29, 0.60);
-    border: 1.5px solid rgba(255, 255, 255, 0.18);
-    border-radius: 20px;
-    padding: 8px 20px;
-    min-height: 28px;
-}
-
-.dock-clock {
-    color: #ffffff;
-    font-weight: 800;
-    font-size: 17px;
-    letter-spacing: 2px;
-}
-
-.dock-dnd-btn {
-    font-size: 15px;
-    margin-left: 10px;
-    padding: 2px 4px;
-    border-radius: 8px;
-    transition: all 150ms ease;
-}
-
-.dock-dnd-btn:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-}
-
-.dnd-on {
-    color: #f87171;
-}
-
-.dnd-off {
-    color: rgba(255, 255, 255, 0.35);
-}
-
-.dnd-off:hover {
-    color: #ffffff;
-}
-
-.dock-vol-btn {
-    font-size: 15px;
-    margin-left: 6px;
-    padding: 2px 4px;
-    border-radius: 8px;
-    transition: all 150ms ease;
-}
-
-.dock-vol-btn:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-}
-
-.vol-on {
-    color: rgba(255, 255, 255, 0.50);
-}
-
-.vol-on:hover {
-    color: #ffffff;
-}
-
-.vol-muted {
-    color: #f87171;
-}
-```
-
----
-
-## 🪟 4. Autostart en Hyprland
-
-En tu configuración de Hyprland (`~/.config/hypr/conf/autostart.lua` o `hyprland.conf`):
-
-```lua
-hl.exec_cmd("~/.local/bin/minimal-dock")
-```
-o en formato `.conf`:
-```ini
-exec-once = ~/.local/bin/minimal-dock
-```
