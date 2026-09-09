@@ -38,17 +38,22 @@ static gboolean get_dnd_state(void) {
 
 static gboolean update_dnd_status(gpointer user_data) {
     gboolean is_dnd = get_dnd_state();
-    GtkStyleContext *ctx = gtk_widget_get_style_context(dnd_btn);
+    GtkStyleContext *btn_ctx = gtk_widget_get_style_context(dnd_btn);
+    GtkStyleContext *lbl_ctx = gtk_widget_get_style_context(dnd_label);
     if (is_dnd) {
-        gtk_label_set_text(GTK_LABEL(dnd_label), "󰂛"); // Campana silenciada
+        gtk_label_set_text(GTK_LABEL(dnd_label), "\U0000F00B"); // 󰂛
         gtk_widget_set_tooltip_text(dnd_btn, "No Molestar: Activo (Clic para desactivar)");
-        gtk_style_context_remove_class(ctx, "dnd-off");
-        gtk_style_context_add_class(ctx, "dnd-on");
+        gtk_style_context_remove_class(btn_ctx, "dnd-off");
+        gtk_style_context_add_class(btn_ctx, "dnd-on");
+        gtk_style_context_remove_class(lbl_ctx, "dnd-off");
+        gtk_style_context_add_class(lbl_ctx, "dnd-on");
     } else {
-        gtk_label_set_text(GTK_LABEL(dnd_label), "󰂚"); // Campana normal
+        gtk_label_set_text(GTK_LABEL(dnd_label), "\U0000F00A"); // 󰂚
         gtk_widget_set_tooltip_text(dnd_btn, "No Molestar: Desactivado (Clic para activar)");
-        gtk_style_context_remove_class(ctx, "dnd-on");
-        gtk_style_context_add_class(ctx, "dnd-off");
+        gtk_style_context_remove_class(btn_ctx, "dnd-on");
+        gtk_style_context_add_class(btn_ctx, "dnd-off");
+        gtk_style_context_remove_class(lbl_ctx, "dnd-on");
+        gtk_style_context_add_class(lbl_ctx, "dnd-off");
     }
     return TRUE;
 }
@@ -101,7 +106,9 @@ int main(int argc, char *argv[]) {
     gtk_layer_set_anchor(GTK_WINDOW(win), GTK_LAYER_SHELL_EDGE_LEFT, FALSE);
     gtk_layer_set_anchor(GTK_WINDOW(win), GTK_LAYER_SHELL_EDGE_RIGHT, FALSE);
     gtk_layer_set_anchor(GTK_WINDOW(win), GTK_LAYER_SHELL_EDGE_TOP, FALSE);
-    gtk_layer_set_margin(GTK_WINDOW(win), GTK_LAYER_SHELL_EDGE_BOTTOM, 14);
+    
+    // Margen inferior reducido a la mitad (7px)
+    gtk_layer_set_margin(GTK_WINDOW(win), GTK_LAYER_SHELL_EDGE_BOTTOM, 7);
 
     GdkScreen *screen = gtk_widget_get_screen(win);
     GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
@@ -128,7 +135,8 @@ int main(int argc, char *argv[]) {
 
     dnd_btn = gtk_button_new();
     gtk_style_context_add_class(gtk_widget_get_style_context(dnd_btn), "dock-dnd-btn");
-    dnd_label = gtk_label_new("󰂚");
+    dnd_label = gtk_label_new("\U0000F00A");
+    gtk_style_context_add_class(gtk_widget_get_style_context(dnd_label), "dnd-off");
     gtk_container_add(GTK_CONTAINER(dnd_btn), dnd_label);
     g_signal_connect(dnd_btn, "clicked", G_CALLBACK(toggle_dnd), NULL);
     gtk_box_pack_start(GTK_BOX(box), dnd_btn, FALSE, FALSE, 0);
