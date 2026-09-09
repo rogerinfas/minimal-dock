@@ -27,7 +27,7 @@ static gboolean update_clock(gpointer user_data) {
 static gboolean get_dnd_state() {
     FILE *fp = popen("swaync-client -D 2>/dev/null", "r");
     if (!fp) return FALSE;
-    char buffer[16];
+    char buffer[32];
     gboolean is_dnd = FALSE;
     if (fgets(buffer, sizeof(buffer), fp) != NULL) {
         if (strstr(buffer, "true") != NULL) {
@@ -56,7 +56,7 @@ static gboolean update_dnd_status(gpointer user_data) {
 }
 
 static void toggle_dnd(GtkWidget *widget, gpointer data) {
-    system("swaync-client -d >/dev/null 2>&1 &");
+    system("swaync-client -d >/dev/null 2>&1");
     update_dnd_status(NULL);
 }
 
@@ -67,14 +67,15 @@ static void get_volume_info(int *volume, gboolean *is_muted) {
     if (!fp) return;
     char buffer[128];
     if (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        if (strstr(buffer, "[MUTED]") != NULL) {
+        // Formatos posibles: "Volume: 0.38" o "Volume: 0.38 [MUTED]"
+        if (strstr(buffer, "[MUTED]") != NULL || strstr(buffer, "MUTED") != NULL) {
             *is_muted = TRUE;
         }
         char *p = strstr(buffer, "Volume:");
         if (p) {
             float vol = 0.0f;
             if (sscanf(p, "Volume: %f", &vol) == 1) {
-                *volume = (int)(vol * 100.0f);
+                *volume = (int)((vol * 100.0f) + 0.5f);
             }
         }
     }
@@ -91,7 +92,7 @@ static gboolean update_volume_status(gpointer user_data) {
         gtk_label_set_text(GTK_LABEL(vol_label), "󰝟");
         gtk_style_context_remove_class(ctx, "vol-on");
         gtk_style_context_add_class(ctx, "vol-muted");
-        gtk_widget_set_tooltip_text(vol_btn, "Volumen: Silenciado");
+        gtk_widget_set_tooltip_text(vol_btn, "Volumen: Silenciado (Clic para desmutear)");
     } else {
         gtk_style_context_remove_class(ctx, "vol-muted");
         gtk_style_context_add_class(ctx, "vol-on");
@@ -109,10 +110,16 @@ static gboolean update_volume_status(gpointer user_data) {
     return TRUE;
 }
 
+static gboolean delayed_update_volume(gpointer user_data) {
+    update_volume_status(NULL);
+    return FALSE; // Solo ejecutar una vez
+}
+
 static gboolean on_vol_click(GtkWidget *widget, GdkEventButton *event, gpointer user_data) {
     if (event->button == 1) {
-        system("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle >/dev/null 2>&1 &");
-        update_volume_status(NULL);
+        system("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle >/dev/null 2>&1");
+        // Pequeño retardo para que WirePlumber registre el cambio en PipeWire
+        g_timeout_add(80, delayed_update_volume, NULL);
         return TRUE;
     } else if (event->button == 3) {
         system("pavucontrol >/dev/null 2>&1 &");
@@ -123,12 +130,12 @@ static gboolean on_vol_click(GtkWidget *widget, GdkEventButton *event, gpointer 
 
 static gboolean on_vol_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer user_data) {
     if (event->direction == GDK_SCROLL_UP) {
-        system("wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ >/dev/null 2>&1 &");
-        update_volume_status(NULL);
+        system("wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ >/dev/null 2>&1");
+        g_timeout_add(50, delayed_update_volume, NULL);
         return TRUE;
     } else if (event->direction == GDK_SCROLL_DOWN) {
-        system("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- >/dev/null 2>&1 &");
-        update_volume_status(NULL);
+        system("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- >/dev/null 2>&1");
+        g_timeout_add(50, delayed_update_volume, NULL);
         return TRUE;
     }
     return FALSE;
@@ -225,8 +232,8 @@ int main(int argc, char *argv[]) {
     update_volume_status(NULL);
 
     g_timeout_add_seconds(1, update_clock, NULL);
-    g_timeout_add_seconds(2, update_dnd_status, NULL);
-    g_timeout_add_seconds(2, update_volume_status, NULL);
+    g_timeout_add_seconds(1, update_dnd_status, NULL);
+    g_timeout_add_seconds(1, update_volume_status, NULL);
 
     g_signal_connect(win, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_widget_show_all(win);
