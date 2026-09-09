@@ -36,20 +36,20 @@ window#dock-window {
 }
 
 .dnd-on {
-    color: #f87171; /* Campana silenciada (DND activo) */
+    color: #f87171; /* Notificaciones Silenciadas (DND) */
 }
 
 .dnd-off {
-    color: rgba(255, 255, 255, 0.35); /* Campana normal tenue */
+    color: #ffffff; /* Notificaciones Normales: Blanco claro */
 }
 
 .dnd-off:hover {
-    color: #ffffff;
+    color: #38bdf8;
 }
 
 .dock-vol-btn {
     font-size: 15px;
-    margin-left: 6px;
+    margin-left: 8px;
     padding: 2px 4px;
     border-radius: 8px;
     transition: all 150ms ease;
@@ -60,13 +60,13 @@ window#dock-window {
 }
 
 .vol-on {
-    color: rgba(255, 255, 255, 0.50);
+    color: #ffffff; /* Audio Normal: Blanco claro */
 }
 
 .vol-on:hover {
-    color: #ffffff;
+    color: #38bdf8;
 }
 
 .vol-muted {
-    color: #f87171;
+    color: #f87171; /* Audio Silenciado: Rojo */
 }
