@@ -1,44 +1,36 @@
-# 🕒 Minimal Clock Dock + Keybindings (Hyprland / Wayland)
+# 🕒 Minimal Clock Dock (Reloj + DND + Volumen)
 
-Dock minimalista, moderno y flotante con reloj 24h, botón sutil interactivo de **No Molestar (DND)**, fondo oscuro translúcido con blur acrílico, persistencia sobre pantalla completa, **detección de pantalla principal** y la **configuración completa de atajos de teclado**.
+Dock minimalista, moderno y flotante con:
+- 🕒 **Reloj en formato 24 horas** (`HH:MM`).
+- 🔕 **Modo No Molestar (DND)** interactivo con `swaync`.
+- 🔊 **Control de Volumen General interactivo** con `wpctl`.
+- 🪟 **Fondo oscuro translúcido con blur acrílico** y bordes limpios sin halos.
+- 📌 **Persistencia sobre pantalla completa (Fullscreen)** y **fijado al monitor principal por defecto**.
 
 ---
 
-## ⌨️ Atajos de Teclado Principales (`SUPER` = Tecla Windows)
+## 🎛️ Controles del Dock
 
-| Atajo | Acción |
-| :--- | :--- |
-| <kbd>SUPER</kbd> + <kbd>D</kbd> | **Lanzador de aplicaciones (Rofi)** |
-| <kbd>SUPER</kbd> + <kbd>Enter</kbd> | **Abrir Terminal (Kitty)** |
-| <kbd>SUPER</kbd> + <kbd>B</kbd> | **Abrir Navegador Web** |
-| <kbd>SUPER</kbd> + <kbd>E</kbd> | **Abrir Gestor de Archivos (Nautilus)** |
-| <kbd>SUPER</kbd> + <kbd>A</kbd> | **Vista general / Overview** |
-| <kbd>SUPER</kbd> + <kbd>ALT</kbd> + <kbd>V</kbd> | **Historial del Portapapeles (Cliphist)** |
-| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>S</kbd> | **Captura de pantalla por área** |
-| <kbd>SUPER</kbd> + <kbd>Q</kbd> | **Cerrar ventana activa** |
-| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>F</kbd> | **Pantalla Completa (Fullscreen)** |
-| <kbd>SUPER</kbd> + <kbd>Space</kbd> | **Alternar ventana flotante (Floating)** |
-| <kbd>SUPER</kbd> + <kbd>1</kbd> .. <kbd>0</kbd> | **Cambiar de espacio de trabajo (Workspaces)** |
-| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>1</kbd> .. <kbd>0</kbd> | **Mover ventana a espacio de trabajo** |
-| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>N</kbd> | **Panel de notificaciones (SwayNC)** |
-| <kbd>SUPER</kbd> + <kbd>L</kbd> | **Bloquear pantalla (Lock screen)** |
-| <kbd>SUPER</kbd> + <kbd>CTRL</kbd> + <kbd>R</kbd> | **Recargar configuración de Hyprland** |
+### 1. Botón de Modo No Molestar (Campana)
+- **Clic**: Alterna entre **Modo Normal** (󰂚) y **Modo No Molestar** (󰂛 en rojo).
 
-*(Los archivos completos de atajos están disponibles en [`keybindings.conf`](keybindings.conf) y [`keybindings.lua`](keybindings.lua)).*
+### 2. Botón de Volumen (Altavoz)
+- **Rueda del ratón hacia arriba / abajo**: Sube o baja el volumen (+5% / -5%).
+- **Clic izquierdo**: Silencia o desilencia el audio (Mute toggle 󰝟).
+- **Clic derecho**: Abre el mezclador gráfico de audio (`pavucontrol`) para configuración avanzada.
 
 ---
 
 ## 📦 1. Dependencias Requeridas
 
-En Arch Linux / EndeavourOS:
-
+En **Arch Linux / EndeavourOS**:
 ```bash
-sudo pacman -S python python-gobject gtk3 gtk-layer-shell swaync rofi
+sudo pacman -S python python-gobject gtk3 gtk-layer-shell swaync wireplumber pavucontrol
 ```
 
 ---
 
-## ⚙️ 2. Archivos de Configuración del Dock
+## ⚙️ 2. Archivos de Configuración
 
 Crea la carpeta de configuración si aún no existe:
 ```bash
@@ -101,8 +93,10 @@ class MinimalClockDock(Gtk.Window):
         # Actualizaciones periódicas
         GLib.timeout_add_seconds(1, self.update_clock)
         GLib.timeout_add_seconds(2, self.update_dnd_status)
+        GLib.timeout_add_seconds(2, self.update_volume_status)
         self.update_clock()
         self.update_dnd_status()
+        self.update_volume_status()
 
     def load_css(self):
         provider = Gtk.CssProvider()
@@ -126,13 +120,30 @@ class MinimalClockDock(Gtk.Window):
         self.clock_label.get_style_context().add_class("dock-clock")
         box.pack_start(self.clock_label, True, True, 0)
         
+        # Separador vertical
+        separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        separator.get_style_context().add_class("dock-separator")
+        box.pack_start(separator, False, False, 0)
+        
         # Botón Campana (No Molestar / DND)
         self.dnd_btn = Gtk.Button()
-        self.dnd_btn.get_style_context().add_class("dock-dnd-btn")
+        self.dnd_btn.get_style_context().add_class("dock-icon-btn")
         self.dnd_label = Gtk.Label()
         self.dnd_btn.add(self.dnd_label)
         self.dnd_btn.connect("clicked", self.toggle_dnd)
         box.pack_start(self.dnd_btn, False, False, 0)
+        
+        # Botón de Volumen interactivo
+        self.vol_btn = Gtk.Button()
+        self.vol_btn.get_style_context().add_class("dock-icon-btn")
+        self.vol_label = Gtk.Label()
+        self.vol_btn.add(self.vol_label)
+        
+        # Habilitar eventos de scroll de ratón para subir/bajar volumen
+        self.vol_btn.add_events(Gdk.EventMask.SCROLL_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.vol_btn.connect("button-press-event", self.on_vol_click)
+        self.vol_btn.connect("scroll-event", self.on_vol_scroll)
+        box.pack_start(self.vol_btn, False, False, 0)
         
         self.add(box)
 
@@ -157,7 +168,7 @@ class MinimalClockDock(Gtk.Window):
             ctx.remove_class("dnd-off")
             ctx.add_class("dnd-on")
         else:
-            self.dnd_label.set_text("󰂚") # Campana normal (Modo normal)
+            self.dnd_label.set_text("󰂚") # Campana normal
             self.dnd_btn.set_tooltip_text("No Molestar: Desactivado (Clic para activar)")
             ctx.remove_class("dnd-on")
             ctx.add_class("dnd-off")
@@ -169,6 +180,63 @@ class MinimalClockDock(Gtk.Window):
             self.update_dnd_status()
         except Exception as e:
             print(f"Error cambiando DND: {e}")
+
+    def get_volume_info(self):
+        try:
+            out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"], text=True, timeout=1).strip()
+            # Formato: "Volume: 0.40" o "Volume: 0.40 [MUTED]"
+            is_muted = "[MUTED]" in out
+            vol_str = out.replace("Volume:", "").replace("[MUTED]", "").strip()
+            vol = int(float(vol_str) * 100)
+            return vol, is_muted
+        except Exception:
+            return 50, False
+
+    def update_volume_status(self):
+        vol, is_muted = self.get_volume_info()
+        ctx = self.vol_btn.get_style_context()
+        
+        if is_muted or vol == 0:
+            self.vol_label.set_text("󰝟") # Silenciado
+            ctx.remove_class("vol-icon")
+            ctx.add_class("vol-muted")
+            self.vol_btn.set_tooltip_text("Volumen: Silenciado (Clic izq: Desmutear | Clic der: Mezclador)")
+        else:
+            ctx.remove_class("vol-muted")
+            ctx.add_class("vol-icon")
+            if vol < 30:
+                icon = "󰕿"
+            elif vol < 70:
+                icon = "󰖀"
+            else:
+                icon = "󰕾"
+            self.vol_label.set_text(icon)
+            self.vol_btn.set_tooltip_text(f"Volumen: {vol}% (Rueda: Ajustar | Clic izq: Silenciar | Clic der: Mezclador)")
+        return True
+
+    def on_vol_click(self, widget, event):
+        if event.button == 1: # Clic izquierdo: Mute / Unmute
+            subprocess.run(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"], check=False)
+            self.update_volume_status()
+            return True
+        elif event.button == 3: # Clic derecho: Abrir pavucontrol
+            try:
+                subprocess.Popen(["pavucontrol"])
+            except Exception:
+                pass
+            return True
+        return False
+
+    def on_vol_scroll(self, widget, event):
+        if event.direction == Gdk.ScrollDirection.UP:
+            subprocess.run(["wpctl", "set-volume", "-l", "1.0", "@DEFAULT_AUDIO_SINK@", "5%+"], check=False)
+            self.update_volume_status()
+            return True
+        elif event.direction == Gdk.ScrollDirection.DOWN:
+            subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"], check=False)
+            self.update_volume_status()
+            return True
+        return False
 
 def get_primary_monitor():
     display = Gdk.Display.get_default()
@@ -236,15 +304,20 @@ window#dock-window {
     letter-spacing: 2px;
 }
 
-.dock-dnd-btn {
+.dock-separator {
+    background-color: rgba(255, 255, 255, 0.18);
+    width: 1px;
+    margin: 3px 10px;
+}
+
+.dock-icon-btn {
     font-size: 15px;
-    margin-left: 10px;
-    padding: 2px 4px;
+    padding: 2px 5px;
     border-radius: 8px;
     transition: all 150ms ease;
 }
 
-.dock-dnd-btn:hover {
+.dock-icon-btn:hover {
     background-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -258,6 +331,18 @@ window#dock-window {
 
 .dnd-off:hover {
     color: #ffffff;
+}
+
+.vol-icon {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.vol-icon:hover {
+    color: #ffffff;
+}
+
+.vol-muted {
+    color: #f87171;
 }
 ```
 
